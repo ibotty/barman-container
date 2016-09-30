@@ -1,0 +1,47 @@
+#!/bin/bash
+set -euo pipefail
+errcode_no_credentials=6
+PGPASSFILE="$HOME/.pgpass"
+
+err() {
+    echo "${@-}" >&2
+}
+
+get_value() {
+    ret="$(echo "$1" | xargs -n1 | awk -F= "/$2/"' {print $2}')"
+    [ -z "$ret" ] && ret=\*
+    echo "$ret"
+}
+
+get_conninfo() {
+    local conninfo_type="$1" conffile="$2"
+    awk '/^'"$conninfo_type"'info *=/ { $1=$2=""; print }' "$conffile" \
+        | sed -e 's/^ *//' -e 's/ *$//g' -e 's/"\(.*\)"/\1/'
+}
+
+for conffile in /etc/barman.d/*.conf; do
+    if [ -f "$conffile" ]; then
+        credsdir="/etc/barman.d/$(basename "$conffile" .conf)"
+        for conninfo_type in conn streaming_conn; do
+            conninfo="$(get_conninfo "$conninfo_type" "$conffile")"
+            conninfo_type="${conninfo_type/_/-}"
+            host="$(get_value "$conninfo" host)"
+            port="$(get_value "$conninfo" port)"
+            dbname="$(get_value "$conninfo" dbname)"
+            
+            if [ -f "$credsdir/$conninfo_type/username" ] && \
+                [ -f "$credsdir/$conninfo_type/password" ]; then
+                    user="$(<"$credsdir/$conninfo_type/username")"
+                    password="$(<"$credsdir/$conninfo_type/password")"
+            else
+                err "$credsdir/$conninfo_type does not contain username and password!" 
+                exit "$errcode_no_credentials"
+            fi
+            echo "$host:$port:$dbname:$user:$password" >> $PGPASSFILE
+        done
+
+    fi
+done
+
+chmod 0600 "$PGPASSFILE"
+

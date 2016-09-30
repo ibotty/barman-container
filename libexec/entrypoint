@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+# prepend container scripts path
+PATH="/usr/libexec/barman-container:$PATH"
+
+exec "$@"
