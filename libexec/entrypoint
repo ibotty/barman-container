@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+
+. /usr/libexec/barman-container/generate_container_user.sh
+
 # prepend container scripts path
 PATH="/usr/libexec/barman-container:$PATH"
 
