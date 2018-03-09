@@ -12,10 +12,10 @@ RUN yum install -y --setopt=tsflags=nodocs epel-release "$PGREPO"  \
         rsync openssh openssh-server nss_wrapper cronie \
  && yum clean all \
  && chmod a+rwX /var/lib/barman /var/log/barman /etc/barman.conf /etc/barman.d \
- && test "$(id -u barman)" -eq 997
+ && test "$(id -u barman)" -eq 999
 
 COPY libexec/* /usr/libexec/barman-container/
 
-USER 997
+USER 999
 ENTRYPOINT ["/usr/libexec/barman-container/entrypoint"]
 CMD ["run"]
